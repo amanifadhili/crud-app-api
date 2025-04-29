@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -16,51 +17,55 @@ app.use(cors()); // optional but recommended for APIs
 // Register User
 app.post('/register', async (req, res) => {
   const { name, email, password, role } = req.body;
-
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    db.query(
+    
+    // Using promise-based query
+    await db.query(
       'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-      [name, email, hashedPassword, role || 'user'],
-      (err, result) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ message: 'Registration failed' });
-        }
-        res.json({ message: 'User registered successfully' });
-      }
+      [name, email, hashedPassword, role || 'user']
     );
+    
+    res.json({ message: 'User registered successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Registration failed' });
   }
 });
 
 // Login User
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-
-  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: 'Server error' });
-    }
-
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Using promise-based query
+    const [results] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    
     if (results.length > 0) {
       const user = results[0];
       
       const isMatch = await bcrypt.compare(password, user.password);
-
       if (!isMatch) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-
+      
       const token = jwt.sign({ id: user.id, role: user.role }, 'secretkey', { expiresIn: '1h' });
-      res.json({ token });
+      res.json({ 
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      });
     } else {
       res.status(404).json({ message: 'User not found' });
     }
-  });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 // Routes
