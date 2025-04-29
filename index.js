@@ -49,7 +49,11 @@ app.post('/login', async (req, res) => {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
-      const token = jwt.sign({ id: user.id, role: user.role }, 'secretkey', { expiresIn: '1h' });
+      const token = jwt.sign(
+        { id: user.id, role: user.role }, 
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
       res.json({ 
         token,
         user: {
@@ -74,6 +78,7 @@ app.use('/products', verifyToken, productRoutes);
 app.use('/orders', verifyToken, orderRoutes);
 
 // Start Server
-app.listen(3000, () => {
-  console.log('Server started on port 3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
 });
