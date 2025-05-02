@@ -3,8 +3,6 @@
 name = Amani Fadhili
 reg_no = 22rp00536
 
-
-
 **Base URL**: `https://crud-app-api-tucx.onrender.com`
 
 🔐 **Authentication Required**  
